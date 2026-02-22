@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #fafaf9; 
+    color: #292524;
+  }
+
+  /*barra de desplazamiento (Scrollbar) */
+  ::-webkit-scrollbar {
+    width: 12px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f5f5f4; /* Fondo scroll */
+  } 
+  ::-webkit-scrollbar-thumb {
+    background: #34d399; 
+    border-radius: 10px;
+    border: 3px solid #f5f5f4;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #059669; 
+  }
+}
+
+@layer utilities {
+  /* Glassmorphism para tarjetas y la barra de navegación*/
+  .efecto-cristal {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  }
+  
+  /*Animación de flotación en el planeta*/
+  .animacion-flotar {
+    animation: flotar 6s ease-in-out infinite;
+  }
+
+  /* Animación de latido para las huellas de animales*/
+  .animacion-latido {
+    animation: latido-suave 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+
+/* DEFINICIÓN DE ANIMACIONES (KEYFRAMES) */
+
+@keyframes flotar {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); } 
+  100% { transform: translateY(0px); }
+}
+
+@keyframes latido-suave {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1); 
+  }
+  50% { 
+    opacity: 0.7; 
+    transform: scale(1.1);
+  }
+}
