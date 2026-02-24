@@ -14,11 +14,11 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2 cursor-pointer">
-              <span className="text-2xl">🌍</span>
-              <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
-                Planeta Huella
-              </h1>
-            </div>
+          <img src="/src/assets/log.png" alt="Logo de Planeta Huella" className="h-10 w-auto" />
+          <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
+                 Planeta Huella
+             </h1>
+          </div>
             <div className="flex gap-4">
               <button className="hidden sm:block text-stone-400 hover:text-emerald-400 font-medium transition">
                 Nuestro Impacto
