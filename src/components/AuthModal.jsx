@@ -1,110 +1,94 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
 
-const AuthModal = ({ isOpen, onClose }) => {
+const AuthModal = ({ isOpen, onClose, onRegister }) => {
+
     const [role, setRole] = useState('adoptante');
-    const [nombre, setNombre] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '', address: '', phone: '', hours: '', services: '' });
 
     if (!isOpen) return null;
 
-    const handleRegister = async () => {
-        if (!nombre || !email || !password) {
-            alert('Completa todos los campos');
-            return;
-        }
+    // actualiza los datos del formulario
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
-        try {
-            const res = await fetch('http://localhost:5000/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nombre, email, role, password })
-            });
+    // Lógica de registro y Geocodificación
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
 
-            const data = await res.json();
+        if (role !== 'adoptante') {
+            try {
+                // Consultamos la API formData.address
+                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
+                const data = await response.json();
 
-            if (res.ok) {
-                localStorage.setItem('token', data.token);
-                alert('Registro exitoso');
-                onClose();
-            } else {
-                alert(data.message);
+                if (data.length > 0) {
+                    // Si encuentra la dirección, creamos el objeto para el mapa
+                    const newPin = {
+                        id: Date.now(), // ID temporal
+                        type: role,
+                        name: formData.name,
+                        lat: parseFloat(data[0].lat), // Latitud obtenida
+                        lng: parseFloat(data[0].lon), // Longitud obtenida
+                        owner: formData.email,
+                        hours: formData.hours,
+                        services: formData.services,
+                        badgeColor: 'bg-orange-100 text-orange-800'};
+
+                    onRegister(newPin); // Enviamos el pin a App.jsx
+
+                } else {
+                    alert('No encontramos esa dirección. Intenta agregar la ciudad.');
+                }
+            } catch (error) {
+                console.error("Error al buscar dirección", error);
             }
-        } catch (error) {
-            console.error(error);
-            alert('Error al registrar');
         }
+        setLoading(false);
+        onClose(); // Cerramos el modal
     };
 
+
+
     return (
-        <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 backdrop-blur-sm">
-            <div className="bg-zinc-900 text-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative border border-zinc-700">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 backdrop-blur-sm">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative max-h-[90vh] overflow-y-auto">
                 
                 <button 
                     onClick={onClose} 
-                    className="absolute top-4 right-4 text-zinc-400 hover:text-white transition"
-                >
-                    <X size={24} />
+                    className="absolute top-4 right-4 text-zinc-400 hover:text-white transition">
+                        <X size={24} />
                 </button>
 
                 <h2 className="text-2xl font-bold text-center text-sky-400 mb-6">
                     Únete a Planeta Huella
                 </h2>
 
-                <form className="flex flex-col gap-4">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                    <input required name="name" onChange={handleChange} type="text" placeholder="Nombre completo / Institución" className="p-3 border rounded-xl" />
+                    <input required name="email" onChange={handleChange} type="email" placeholder="Correo electrónico" className="p-3 border rounded-xl" />
+                    
+                    <select value={role} onChange={(e) => setRole(e.target.value)} className="p-3 border rounded-xl">
+                        <option value="adoptante">Persona interesada en adoptar</option>
+                        <option value="refugio">Refugio de Animales</option>
+                        <option value="veterinaria">Clínica Veterinaria</option>
+                    </select>
 
-                    <input 
-                        type="text" 
-                        placeholder="Nombre completo / Nombre de institución"
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
-                        className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
+                    {/* 6. RENDERIZADO CONDICIONAL: Solo aparece si NO es adoptante */}
+                    {role !== 'adoptante' && (
+                        <div className="flex flex-col gap-3 bg-emerald-50 p-4 rounded-xl">
+                        <p className="text-xs font-bold text-emerald-800">Datos para el Mapa</p>
+                        <input required name="address" onChange={handleChange} type="text" placeholder="Dirección exacta (Ej. Calle 123, Monterrey)" className="p-2 border rounded text-sm" />
+                        <input required name="phone" onChange={handleChange} type="text" placeholder="Teléfono" className="p-2 border rounded text-sm" />
+                        <input required name="hours" onChange={handleChange} type="text" placeholder="Horarios (Ej. 9am - 5pm)" className="p-2 border rounded text-sm" />
+                        <input required name="services" onChange={handleChange} type="text" placeholder="Servicios principales" className="p-2 border rounded text-sm" />
+                        </div>
+                    )}
 
-                    <input 
-                        type="email" 
-                        placeholder="Correo electrónico"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-
-                    <input 
-                        type="password" 
-                        placeholder="Contraseña"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-sky-500"
-                    />
-
-                    <div className="flex flex-col gap-1">
-                        <label className="text-sm font-semibold text-zinc-300">
-                            ¿Cómo quieres participar?
-                        </label>
-
-                        <select 
-                            value={role}
-                            onChange={(e) => setRole(e.target.value)}
-                            className="p-3 bg-zinc-800 border border-zinc-700 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                        >
-                            <option value="adoptante">Persona interesada en adoptar</option>
-                            <option value="dador">Dar animales en adopción</option>
-                            <option value="refugio">Refugio de Animales</option>
-                            <option value="vet_prop">Clínica Veterinaria (Propietario)</option>
-                            <option value="vet_ref">Clínica Veterinaria (Referencia/Local)</option>
-                            <option value="gobierno">Institución Gubernamental</option>
-                        </select>
-                    </div>
-
-                    <button 
-                        type="button" 
-                        onClick={handleRegister}
-                        className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition duration-300 shadow-lg hover:shadow-sky-500/40"
-                    >
-                        Registrarme y Dejar Huella
+                    <button disabled={loading} type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition">
+                        {loading ? 'Buscando dirección...' : 'Registrarme'}
                     </button>
-
                 </form>
             </div>
         </div>
