@@ -24,7 +24,7 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
                 const data = await response.json();
 
                 if (data.length > 0) {
-                    // Si encuentra la dirección, creamos el objeto para el mapa
+                    // Si encuentra la dirección, crea el objeto para el mapa
                     const newPin = {
                         id: Date.now(), // ID temporal
                         type: role,
@@ -36,7 +36,7 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
                         services: formData.services,
                         badgeColor: 'bg-orange-100 text-orange-800'};
 
-                    onRegister(newPin); // Enviamos el pin a App.jsx
+                    onRegister(newPin); //Registra nuevo pin
 
                 } else {
                     alert('No encontramos esa dirección. Intenta agregar la ciudad.');
@@ -46,10 +46,8 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
             }
         }
         setLoading(false);
-        onClose(); // Cerramos el modal
+        onClose();
     };
-
-
 
     return (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 backdrop-blur-sm">
@@ -75,7 +73,7 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
                         <option value="veterinaria">Clínica Veterinaria</option>
                     </select>
 
-                    {/* 6. RENDERIZADO CONDICIONAL: Solo aparece si NO es adoptante */}
+                    {/*FORMULARIO CONDICIONAL: Si el usuario no es adoptante */}
                     {role !== 'adoptante' && (
                         <div className="flex flex-col gap-3 bg-emerald-50 p-4 rounded-xl">
                         <p className="text-xs font-bold text-emerald-800">Datos para el Mapa</p>
