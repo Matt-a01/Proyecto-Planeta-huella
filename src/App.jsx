@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
-import PlanetGlobe from './components/PlanetGlobe';
 import AuthModal from './components/AuthModal';
+import InteractiveMap from './components/InteractiveMap';
 import './App.css';
+
+const initialLocations = [
+  { id: 1, type: 'veterinaria',
+    name: 'Clínica Veterinaria San Pedro',
+    lat: 25.6600, lng: -100.3800,
+    owner: 'Dr. Alejandro', 
+    hours: '9:00 AM - 7:00 PM', 
+    services: 'Consultas', 
+    badgeColor: 'bg-emerald-100 text-emerald-800' }
+];
 
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  //memoria temporal para las ubicaciones
+  const [locations, setLocations] = useState(initialLocations);
+
+  //envios de nuevos registros con modal
+  const handleAddLocation = (newLocation) => {
+    setLocations([...locations, newLocation]); 
+  };
 
   return (
     <div className="min-h-screen bg-stone-900 font-sans text-stone-200 selection:bg-emerald-500/40">
@@ -15,9 +33,9 @@ function App() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2 cursor-pointer">
           <img src="/src/assets/log.png" alt="Logo de Planeta Huella" className="h-10 w-auto" />
-          <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
-                 Planeta Huella
-             </h1>
+            <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
+              Planeta Huella
+            </h1>
           </div>
             <div className="flex gap-4">
               <button className="hidden sm:block text-stone-400 hover:text-emerald-400 font-medium transition">
@@ -55,14 +73,14 @@ function App() {
           </div>
         </section>
 
-        {/* Planeta */}
+        {/* Sección del Mapa interactivo */}
         <section className="max-w-6xl mx-auto px-4 -mt-16 relative z-20 mb-24">
-          <div className="bg-stone-800/60 backdrop-blur-xl rounded-3xl shadow-2xl border border-stone-700 p-8 md:p-12 flex flex-col items-center">
-            <h3 className="text-2xl font-bold text-white mb-8 text-center">
-              Explora el Ecosistema
-            </h3>
+          <div className="bg-white rounded-3xl shadow-xl border border-stone-100 p-8 md:p-12 flex flex-col items-center">
+            <h3 className="text-2xl font-bold text-stone-800 mb-2 text-center">Explora el Ecosistema</h3>
+            <p className="text-stone-500 mb-8 text-center">Encuentra veterinarias, refugios y campañas cerca de ti.</p>
 
-            <PlanetGlobe />
+            <InteractiveMap locations={locations} />
+
           </div>
         </section>
 
@@ -135,7 +153,7 @@ function App() {
         </section>
       </main>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onRegister={handleAddLocation} />
 
       <footer className="bg-black text-stone-500 py-8 text-center text-sm">
         <p>© 2026 Planeta Huella. Construyendo impacto sostenible.</p>
