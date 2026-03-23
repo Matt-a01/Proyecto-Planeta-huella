@@ -1,31 +1,38 @@
-import React, { useState } from 'react';
-import AuthModal from './components/AuthModal';
+import React, { useState, useEffect} from 'react';
+import axios from 'axios';
 import InteractiveMap from './components/InteractiveMap';
-import './App.css';
-
-const initialLocations = [
-  { id: 1, type: 'veterinaria',
-    name: 'Clínica Veterinaria San Pedro',
-    lat: 25.6600, lng: -100.3800,
-    owner: 'Dr. Alejandro', 
-    hours: '9:00 AM - 7:00 PM', 
-    services: 'Consultas', 
-    badgeColor: 'bg-emerald-100 text-emerald-800' }
-];
+import AuthModal from './components/AuthModal';
+import './index.css';
 
 function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  // lista de ubicaciones vacía
+  const [locations, setLocations] = useState([]);
 
-  //memoria temporal para las ubicaciones
-  const [locations, setLocations] = useState(initialLocations);
+  console.log("URL DEL BACKEND DETECTADA:", import.meta.env.VITE_API_URL);
 
-  //envios de nuevos registros con modal
-  const handleAddLocation = (newLocation) => {
-    setLocations([...locations, newLocation]); 
+  const loadLocationsFromDB = async () => {
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL; 
+      if (!apiUrl) {
+        console.warn("Falta configurar VITE_API_URL en el archivo .env");
+        return; 
+      }
+      const response = await axios.get(`${apiUrl}/pins`);
+      setLocations(response.data);
+    } catch (error) {
+      console.error("Error al conectar con la base de datos:", error);
+    }
   };
 
+  // llama cuando la página carga por primera vez
+  useEffect(() => {
+    loadLocationsFromDB();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="min-h-screen bg-stone-900 font-sans text-stone-200 selection:bg-emerald-500/40">
+    <div className="min-h-screen font-sans text-stone-800 selection:bg-emerald-200">
 
       {/* Navbar */}
       <nav className="sticky top-0 z-50 bg-stone-900/80 backdrop-blur-md border-b border-stone-700">
@@ -153,7 +160,7 @@ function App() {
         </section>
       </main>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onRegister={handleAddLocation} />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onRegisterSuccess={loadLocationsFromDB} />
 
       <footer className="bg-black text-stone-500 py-8 text-center text-sm">
         <p>© 2026 Planeta Huella. Construyendo impacto sostenible.</p>
