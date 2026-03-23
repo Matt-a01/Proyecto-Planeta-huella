@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import { X, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
-const AuthModal = ({ isOpen, onClose, onRegister }) => {
-
+const AuthModal = ({ isOpen, onClose, onRegisterSuccess }) => {
     const [role, setRole] = useState('adoptante');
     const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({ name: '', email: '', address: '', phone: '', hours: '', services: '' });
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const [formData, setFormData] = useState({
+        name: '', email: '', password: '', address: '', phone: '', hours: '', services: ''
+    });
 
     if (!isOpen) return null;
 
@@ -16,37 +20,54 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setErrorMsg('');
 
-        if (role !== 'adoptante') {
-            try {
-                // Consultamos la API formData.address
-                const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
-                const data = await response.json();
+        try {
+            let locationData = {}; // Objeto para las coordenadas
 
-                if (data.length > 0) {
-                    // Si encuentra la dirección, crea el objeto para el mapa
-                    const newPin = {
-                        id: Date.now(), // ID temporal
-                        type: role,
-                        name: formData.name,
-                        lat: parseFloat(data[0].lat), // Latitud obtenida
-                        lng: parseFloat(data[0].lon), // Longitud obtenida
-                        owner: formData.email,
-                        hours: formData.hours,
-                        services: formData.services,
-                        badgeColor: 'bg-orange-100 text-orange-800'};
-
-                    onRegister(newPin); //Registra nuevo pin
-
+            // 3. Geocodificación
+            if (role !== 'adoptante') {
+                const geoRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
+            
+                if (geoRes.data.length > 0) {
+                    locationData = {
+                    lat: parseFloat(geoRes.data[0].lat),
+                    lng: parseFloat(geoRes.data[0].lon),
+                    address: formData.address
+                    };
                 } else {
-                    alert('No encontramos esa dirección. Intenta agregar la ciudad.');
+                    setErrorMsg('No encontramos esa dirección en el mapa.');
+                    setLoading(false);
+                    return;
                 }
-            } catch (error) {
-                console.error("Error al buscar dirección", error);
             }
-        }
+
+            // plantilla de espera igual que MongoDB
+            const payload = {
+                name: formData.name,
+                email: formData.email,
+                password: formData.password,
+                role: role,
+                location: locationData, 
+                services: formData.services,
+                hours: formData.hours
+            };  
+
+            //Envio API
+            const apiUrl = import.meta.env.VITE_API_URL;
+            await axios.post(`${apiUrl}/register`, payload);
+
+
+            alert('Institución registrada exitosamente');
+            onRegisterSuccess(); //App.jsx recarga los pines
+            onClose(); // cierra modal
+
+        } catch (error) {
+        console.error(error);
+        setErrorMsg('Error al registrar. Verifica tus datos');
+        } finally {
         setLoading(false);
-        onClose();
+        }
     };
 
     return (
@@ -66,6 +87,7 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                     <input required name="name" onChange={handleChange} type="text" placeholder="Nombre completo / Institución" className="p-3 border rounded-xl" />
                     <input required name="email" onChange={handleChange} type="email" placeholder="Correo electrónico" className="p-3 border rounded-xl" />
+                    <input required name="password" onChange={handleChange} type="password" placeholder="Crea una contraseña segura" className="p-3 border rounded-xl" />
                     
                     <select value={role} onChange={(e) => setRole(e.target.value)} className="p-3 border rounded-xl">
                         <option value="adoptante">Persona interesada en adoptar</option>
@@ -84,8 +106,10 @@ const AuthModal = ({ isOpen, onClose, onRegister }) => {
                         </div>
                     )}
 
-                    <button disabled={loading} type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition">
-                        {loading ? 'Buscando dirección...' : 'Registrarme'}
+                    {errorMsg && <p className="text-red-500 text-sm font-medium text-center">{errorMsg}</p>}
+
+                    <button disabled={loading} type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition flex justify-center">
+                        {loading ? <Loader2 className="animate-spin" /> : 'Registrarme y Dejar Huella'}
                     </button>
                 </form>
             </div>
