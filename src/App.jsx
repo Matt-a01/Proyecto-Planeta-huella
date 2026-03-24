@@ -9,7 +9,8 @@ function App() {
   // lista de ubicaciones vacía
   const [locations, setLocations] = useState([]);
 
-  console.log("URL DEL BACKEND DETECTADA:", import.meta.env.VITE_API_URL);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const loadLocationsFromDB = async () => {
     try {
@@ -27,11 +28,25 @@ function App() {
 
   // llama cuando la página carga por primera vez
   useEffect(() => {
+    // Revisar si ya había una sesión guardada en el navegador
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+    }
+    // Cargar los pines del mapa
     loadLocationsFromDB();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return (
+  // funcion para cerrar sesión
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setCurrentUser(null);
+    setIsDropdownOpen(false);
+  };
+
+return (
     <div className="min-h-screen font-sans text-stone-800 selection:bg-emerald-200">
 
       {/* Navbar */}
@@ -39,21 +54,49 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2 cursor-pointer">
-          <img src="/log.png" alt="Logo de Planeta Huella" className="h-10 w-auto" />
-            <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
-              Planeta Huella
-            </h1>
-          </div>
-            <div className="flex gap-4">
+              <img src="/log.png" alt="Logo de Planeta Huella" className="h-10 w-auto" />
+              <h1 className="text-xl font-extrabold text-emerald-400 tracking-tight">
+                Planeta Huella
+              </h1>
+            </div>
+            
+            <div className="flex gap-4 items-center">
               <button className="hidden sm:block text-stone-400 hover:text-emerald-400 font-medium transition">
                 Nuestro Impacto
               </button>
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 px-5 rounded-lg shadow-lg transition-all"
-              >
-                Únete a la Red
-              </button>
+
+              {/* render de deteccion de si tiene un loging*/}
+              {currentUser ? (
+                <div className="relative">
+                  {/* Foto de perfil generada por API */}
+                  <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center focus:outline-none">
+                    <img 
+                      src={`https://ui-avatars.com/api/?name=${currentUser.name}&background=10b981&color=fff`} 
+                      alt="Perfil" 
+                      className="w-10 h-10 rounded-full border-2 border-emerald-500 hover:scale-105 transition-transform" 
+                    />
+                  </button>
+                  
+                  {/* Menú Desplegable de Logout */}
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-stone-100 py-2 z-50">
+                      <p className="px-4 py-2 text-sm text-stone-700 font-bold border-b border-stone-100 truncate">
+                        Hola, {currentUser.name.split(' ')[0]}
+                      </p>
+                      <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
+                        Cerrar Sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 px-5 rounded-lg shadow-lg transition-all"
+                >
+                  Únete a la Red
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -154,13 +197,20 @@ function App() {
                   </p>
                 </div>
               </div>
-
             </div>
           </div>
         </section>
       </main>
 
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} onRegisterSuccess={loadLocationsFromDB} />
+      {/* onAuthSuccess actualiza el usuario */}
+      <AuthModal 
+        isOpen={isAuthOpen} 
+        onClose={() => setIsAuthOpen(false)} 
+        onAuthSuccess={(user) => {
+          setCurrentUser(user); // Guarda al usuario logueado en la memoria de la página
+          loadLocationsFromDB(); // Recarga el mapa (por si registró una nueva institucion)
+        }} 
+      />
 
       <footer className="bg-black text-stone-500 py-8 text-center text-sm">
         <p>© 2026 Planeta Huella. Construyendo impacto sostenible.</p>

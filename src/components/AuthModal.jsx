@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-const AuthModal = ({ isOpen, onClose, onRegisterSuccess }) => {
+const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
+    const [isLoginMode, setIsLoginMode] = useState(false);
     const [role, setRole] = useState('adoptante');
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState('');
@@ -23,95 +24,134 @@ const AuthModal = ({ isOpen, onClose, onRegisterSuccess }) => {
         setErrorMsg('');
 
         try {
-            let locationData = {}; // Objeto para las coordenadas
-
-            // 3. Geocodificación
-            if (role !== 'adoptante') {
-                const geoRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
-            
-                if (geoRes.data.length > 0) {
-                    locationData = {
-                    lat: parseFloat(geoRes.data[0].lat),
-                    lng: parseFloat(geoRes.data[0].lon),
-                    address: formData.address
-                    };
-                } else {
-                    setErrorMsg('No encontramos esa dirección en el mapa.');
-                    setLoading(false);
-                    return;
-                }
-            }
-
-            // plantilla de espera igual que MongoDB
-            const payload = {
-                name: formData.name,
-                email: formData.email,
-                password: formData.password,
-                role: role,
-                location: locationData, 
-                services: formData.services,
-                hours: formData.hours
-            };  
-
-            //Envio API
             const apiUrl = import.meta.env.VITE_API_URL;
-            await axios.post(`${apiUrl}/register`, payload);
 
+            // Si es Login
+            if (isLoginMode) {
+                const res = await axios.post(`${apiUrl}/login`, {
+                    email: formData.email,
+                    password: formData.password
+                });
 
-            alert('Institución registrada exitosamente');
-            onRegisterSuccess(); //App.jsx recarga los pines
-            onClose(); // cierra modal
+                // Guarda sesión en el navegador
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+                
+                onAuthSuccess(res.data.user);
+                onClose();
+            }
+            else {
+                let locationData = {};
 
+                if (role !== 'adoptante') {
+                    const geoRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
+                    if (geoRes.data.length > 0) {
+                        locationData = { 
+                            lat: parseFloat(geoRes.data[0].lat),
+                            lng: parseFloat(geoRes.data[0].lon),
+                            address: formData.address 
+                        };
+                    } else {
+                        setErrorMsg('Dirección no encontrada en el mapa.');
+                        setLoading(false);
+                        return;
+                    }
+                }
+
+                // Plantilla MongoDB
+                const payload = {
+                    name: formData.name,
+                    email: formData.email,
+                    password: formData.password,
+                    role: role,
+                    location: locationData, 
+                    services: formData.services,
+                    hours: formData.hours
+                };
+
+                // Envío API a la ruta de registro
+                const res = await axios.post(`${apiUrl}/register`, payload);
+                
+                // Auto-login al registrarse
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+
+                alert('¡Bienvenido a Planeta Huella!');
+                onAuthSuccess(res.data.user);
+                onClose();
+            }
         } catch (error) {
-        console.error(error);
-        setErrorMsg('Error al registrar. Verifica tus datos');
+            setErrorMsg(error.response?.data?.error || 'Error de conexión. Intenta de nuevo.');
         } finally {
-        setLoading(false);
+            setLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50 backdrop-blur-sm p-4">
             <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl relative max-h-[90vh] overflow-y-auto">
-                
+
                 <button 
                     onClick={onClose} 
-                    className="absolute top-4 right-4 text-zinc-400 hover:text-white transition">
-                        <X size={24} />
+                    className="absolute top-4 right-4 text-stone-400 hover:text-stone-600 transition"
+                >
+                    <X size={24} />
                 </button>
 
-                <h2 className="text-2xl font-bold text-center text-sky-400 mb-6">
-                    Únete a Planeta Huella
+                <h2 className="text-2xl font-bold text-center text-emerald-600 mb-6">
+                    {isLoginMode ? 'Iniciar Sesión' : 'Únete a Planeta Huella'}
                 </h2>
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                    <input required name="name" onChange={handleChange} type="text" placeholder="Nombre completo / Institución" className="p-3 border rounded-xl" />
-                    <input required name="email" onChange={handleChange} type="email" placeholder="Correo electrónico" className="p-3 border rounded-xl" />
-                    <input required name="password" onChange={handleChange} type="password" placeholder="Crea una contraseña segura" className="p-3 border rounded-xl" />
                     
-                    <select value={role} onChange={(e) => setRole(e.target.value)} className="p-3 border rounded-xl">
-                        <option value="adoptante">Persona interesada en adoptar</option>
-                        <option value="refugio">Refugio de Animales</option>
-                        <option value="veterinaria">Clínica Veterinaria</option>
-                    </select>
+                    {/* Campos exclusivos para el registro */}
+                    {!isLoginMode && (
+                        <>
+                            <input required name="name" onChange={handleChange} type="text" placeholder="Nombre completo / Institución" className="p-3 border rounded-xl" />
+                            <select value={role} onChange={(e) => setRole(e.target.value)} className="p-3 border rounded-xl bg-white">
+                                <option value="adoptante">Persona interesada en adoptar</option>
+                                <option value="refugio">Refugio de Animales</option>
+                                <option value="veterinaria">Clínica Veterinaria</option>
+                            </select>
+                        </>
+                    )}
 
-                    {/*FORMULARIO CONDICIONAL: Si el usuario no es adoptante */}
-                    {role !== 'adoptante' && (
+                    {/* Campos comunes (login y registro) */}
+                    <input required name="email" onChange={handleChange} type="email" placeholder="Correo electrónico" className="p-3 border rounded-xl" />
+                    <input required name="password" onChange={handleChange} type="password" placeholder={isLoginMode ? "Contraseña" : "Crea una contraseña segura"} className="p-3 border rounded-xl" />
+                    
+                    {/* FORMULARIO CONDICIONAL: si el usuario no es adoptante*/}
+                    {!isLoginMode && role !== 'adoptante' && (
                         <div className="flex flex-col gap-3 bg-emerald-50 p-4 rounded-xl">
-                        <p className="text-xs font-bold text-emerald-800">Datos para el Mapa</p>
-                        <input required name="address" onChange={handleChange} type="text" placeholder="Dirección exacta (Ej. Calle 123, Monterrey)" className="p-2 border rounded text-sm" />
-                        <input required name="phone" onChange={handleChange} type="text" placeholder="Teléfono" className="p-2 border rounded text-sm" />
-                        <input required name="hours" onChange={handleChange} type="text" placeholder="Horarios (Ej. 9am - 5pm)" className="p-2 border rounded text-sm" />
-                        <input required name="services" onChange={handleChange} type="text" placeholder="Servicios principales" className="p-2 border rounded text-sm" />
+                            <p className="text-xs font-bold text-emerald-800">Datos para el Mapa</p>
+                            <input required name="address" onChange={handleChange} type="text" placeholder="Dirección exacta (Ej. Calle 123, Monterrey)" className="p-2 border rounded text-sm" />
+                            <input required name="phone" onChange={handleChange} type="text" placeholder="Teléfono" className="p-2 border rounded text-sm" />
+                            <input required name="hours" onChange={handleChange} type="text" placeholder="Horarios (Ej. 9am - 5pm)" className="p-2 border rounded text-sm" />
+                            <input required name="services" onChange={handleChange} type="text" placeholder="Servicios principales" className="p-2 border rounded text-sm" />
                         </div>
                     )}
 
                     {errorMsg && <p className="text-red-500 text-sm font-medium text-center">{errorMsg}</p>}
 
                     <button disabled={loading} type="submit" className="mt-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition flex justify-center">
-                        {loading ? <Loader2 className="animate-spin" /> : 'Registrarme y Dejar Huella'}
+                        {loading ? <Loader2 className="animate-spin" /> : (isLoginMode ? 'Entrar' : 'Registrarme y Dejar Huella')}
                     </button>
                 </form>
+
+                {/* boton para alternar entre Login y Registro */}
+                <div className="mt-6 text-center text-sm text-stone-500">
+                    {isLoginMode ? '¿No tienes una cuenta?' : '¿Ya tienes una cuenta?'} {' '}
+                    <button 
+                        onClick={() => {
+                            setIsLoginMode(!isLoginMode);
+                            setErrorMsg(''); // Limpia errores al cambiar de modo
+                        }} 
+                        className="text-emerald-600 font-bold hover:underline"
+                    >
+                        {isLoginMode ? 'Regístrate aquí' : 'Inicia sesión aquí'}
+                    </button>
+                </div>
+
             </div>
         </div>
     );
