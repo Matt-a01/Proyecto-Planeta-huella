@@ -1,7 +1,9 @@
 import React, { useState, useEffect} from 'react';
 import axios from 'axios';
 import InteractiveMap from './components/InteractiveMap';
+import { X } from 'lucide-react';
 import AuthModal from './components/AuthModal';
+import { impactStories } from './data/impactStories';
 import './index.css';
 
 function App() {
@@ -11,6 +13,9 @@ function App() {
 
   const [currentUser, setCurrentUser] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const [showAllStories, setShowAllStories] = useState(false);
+  const [selectedStory, setSelectedStory] = useState(null);
 
   const loadLocationsFromDB = async () => {
     try {
@@ -46,6 +51,13 @@ function App() {
     setIsDropdownOpen(false);
   };
 
+  const scrollToImpact = () => {
+    const impactSection = document.getElementById('impact-section');
+    if (impactSection) {
+      impactSection.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
 return (
     <div className="min-h-screen font-sans text-stone-800 selection:bg-emerald-200">
 
@@ -61,7 +73,7 @@ return (
             </div>
             
             <div className="flex gap-4 items-center">
-              <button className="hidden sm:block text-stone-400 hover:text-emerald-400 font-medium transition">
+              <button onClick={scrollToImpact} className="hidden sm:block text-stone-400 hover:text-emerald-400 font-medium transition" >
                 Nuestro Impacto
               </button>
 
@@ -134,10 +146,9 @@ return (
           </div>
         </section>
 
-        {/* Historias */}
-        <section className="bg-stone-800 py-20">
+<section id="impact-section" className="bg-stone-800 py-20">
           <div className="max-w-6xl mx-auto px-4">
-            <div className="flex justify-between items-end mb-10">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
               <div>
                 <h3 className="text-3xl font-bold text-white">
                   Historias de Impacto
@@ -146,61 +157,79 @@ return (
                   Pequeñas acciones, grandes cambios.
                 </p>
               </div>
-              <button className="text-emerald-400 font-semibold hover:text-emerald-300 transition">
-                Ver todas →
+              <button 
+                onClick={() => setShowAllStories(!showAllStories)}
+                className="text-emerald-400 font-semibold hover:text-emerald-300 transition"
+              >
+                {showAllStories ? 'Ver menos ↑' : 'Ver todas →'}
               </button>
             </div>
 
+            {/* Renderizado dinámico de las tarjetas */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-
-              {/* Tarjeta 1 */}
-              <div className="group bg-stone-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 border border-stone-700 flex flex-col sm:flex-row">
-                <div className="sm:w-2/5 h-48 sm:h-auto overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400"
-                    alt="Perro rescatado"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
+              {impactStories.slice(0, showAllStories ? impactStories.length : 2).map((story) => (
+                <div 
+                  key={story.id} 
+                  onClick={() => setSelectedStory(story)}
+                  className="group bg-stone-900 rounded-2xl overflow-hidden shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 border border-stone-700 flex flex-col sm:flex-row cursor-pointer"
+                >
+                  <div className="sm:w-2/5 h-48 sm:h-auto overflow-hidden">
+                    <img
+                      src={story.img}
+                      alt={story.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  </div>
+                  <div className="p-6 sm:w-3/5 flex flex-col justify-center">
+                    <h4 className="font-bold text-xl text-white mb-2 group-hover:text-emerald-400 transition-colors">
+                      {story.title}
+                    </h4>
+                    <p className="text-sm text-stone-400">
+                      {story.shortDesc}
+                    </p>
+                  </div>
                 </div>
-                <div className="p-6 sm:w-3/5 flex flex-col justify-center">
-                  <span className="text-xs font-bold text-orange-400 bg-orange-900/40 inline-block px-2 py-1 rounded mb-3 w-max">
-                    ODS 10
-                  </span>
-                  <h4 className="font-bold text-xl text-white mb-2">
-                    Comunidad que rescata
-                  </h4>
-                  <p className="text-sm text-stone-400">
-                    Gracias a la red colaborativa, más de 300 animales fueron
-                    atendidos este año.
-                  </p>
-                </div>
-              </div>
-
-              {/* Tarjeta 2 */}
-              <div className="group bg-stone-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-emerald-500/20 transition-all duration-300 border border-stone-700 flex flex-col sm:flex-row">
-                <div className="sm:w-2/5 h-48 sm:h-auto overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=400"
-                    alt="Gato saludable"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                </div>
-                <div className="p-6 sm:w-3/5 flex flex-col justify-center">
-                  <span className="text-xs font-bold text-emerald-400 bg-emerald-900/40 inline-block px-2 py-1 rounded mb-3 w-max">
-                    ODS 3
-                  </span>
-                  <h4 className="font-bold text-xl text-white mb-2">
-                    Salud accesible
-                  </h4>
-                  <p className="text-sm text-stone-400">
-                    Tecnología que facilita atención veterinaria preventiva.
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
       </main>
+
+      {/* Modal Historia */} 
+      {selectedStory && (
+        <div className="fixed inset-0 bg-black/80 flex justify-center items-center z-50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-stone-900 rounded-3xl overflow-hidden w-full max-w-2xl shadow-2xl relative border border-stone-700 flex flex-col max-h-[90vh]">
+            
+            {/* Botón Cerrar */}
+            <button 
+              onClick={() => setSelectedStory(null)} 
+              className="absolute top-4 right-4 z-10 bg-black/50 p-2 rounded-full text-white hover:bg-emerald-600 transition"
+            >
+              <X size={20} />
+            </button>
+
+            {/* Imagen Superior */}
+            <div className="h-64 w-full relative">
+              <img 
+                src={selectedStory.img} 
+                alt={selectedStory.title} 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-stone-900 to-transparent"></div>
+            </div>
+
+            {/* Texto Inferior */}
+            <div className="p-8 overflow-y-auto">
+              <h2 className="text-3xl font-bold text-white mb-4">
+                {selectedStory.title}
+              </h2>
+              <p className="text-stone-300 text-lg leading-relaxed">
+                {selectedStory.fullDesc}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* onAuthSuccess actualiza el usuario */}
       <AuthModal 
