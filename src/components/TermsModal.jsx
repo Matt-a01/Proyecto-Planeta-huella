@@ -7,7 +7,6 @@ if (!isOpen) return null;
 return (
 <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
     
-    // Contenedor principal de la ventana flotante
     <div className="bg-white rounded-3xl w-full max-w-2xl shadow-2xl relative border border-stone-100 flex flex-col max-h-[85vh] overflow-hidden">
     
     {/* Encabezado fijo de la ventana */}
