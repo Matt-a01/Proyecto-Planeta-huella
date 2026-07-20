@@ -40,24 +40,20 @@ const SearchField = () => {
 
 // MAPA INTERACTIVO DE LOCALICACIONES
 // Limite de mapa en Nuevo Leon
-const nuevoLeonBounds = [
-    [23.0000, -102.0000], // Suroeste
-    [28.0000, -97.7000]   // Noreste
-];
+
 
 const InteractiveMap = ({ locations }) => {
-    const centerPosition = [25.6700, -100.3500];
+    const centerPosition = [23.6345, -102.5528];
 
     return (
         <div className="w-full h-[500px] md:h-[600px] rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-100 relative z-0">
         <MapContainer 
             center={centerPosition} 
-            zoom={12} 
+            zoom={5} 
             scrollWheelZoom={true} 
             style={{ height: '100%', width: '100%' }}
-            maxBounds={nuevoLeonBounds}
             maxBoundsViscosity={1.0} 
-            minZoom={7}>
+            minZoom={3}>
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
             {/* buscador del mapa */}

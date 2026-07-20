@@ -57,29 +57,33 @@ const AuthModal = ({ isOpen, onClose, onAuthSuccess }) => {
 
             // Geocodificación para instituciones (no adoptantes)
             if (role !== 'adoptante') {
-            const geoRes = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.address)}`);
-            if (geoRes.data.length > 0) {
-                locationData = {
-                lat: parseFloat(geoRes.data[0].lat),
-                lng: parseFloat(geoRes.data[0].lon),
-                address: formData.address
-                };
-            } else {
-                setErrorMsg('Dirección no encontrada en el mapa.');
-                setLoading(false);
-                return;
-            }
+                const direccionCompleta = `${formData.address}, México`;
+                const geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccionCompleta)}&countrycodes=mx&limit=1`;
+                
+                const geoRes = await axios.get(geocodeUrl);
+                
+                if (geoRes.data.length > 0) {
+                    locationData = {
+                    lat: parseFloat(geoRes.data[0].lat),
+                    lng: parseFloat(geoRes.data[0].lon),
+                    address: formData.address
+                    };
+                } else {
+                    setErrorMsg('No pudimos localizar esa dirección en México. Por favor, sé más específico (Ej: Av. Juárez 100, Monterrey, NL).');
+                    setLoading(false);
+                    return;
+                }
             }
 
             // Estructura de datos para MongoDB
             const payload = {
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-            role: role,
-            location: locationData,
-            services: formData.services,
-            hours: formData.hours
+                name: formData.name,
+                email: formData.email,
+                password: formData.password,
+                role: role,
+                location: locationData,
+                services: formData.services,
+                hours: formData.hours
             };
 
             const res = await axios.post(`${apiUrl}/register`, payload);
